@@ -1,5 +1,52 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+Folder structure
+
+
+src/
+  app/
+    layout.tsx
+    page.tsx                         // mounts <Scene/>
+    api/
+      latency/route.ts               // server route: proxy/normalize latency source
+      exchanges/route.ts             // static JSON passthrough (cached)
+      regions/route.ts               // static JSON passthrough (cached)
+  components/
+    scene/
+      Scene.tsx                      // <Canvas> root, lights, controls
+      Globe.tsx                      // sphere + landmass wireframe
+      ExchangeMarkers.tsx            // instanced mesh of exchange points
+      CloudRegionMarkers.tsx         // instanced mesh of cloud regions
+      LatencyArcs.tsx                // animated arcs between pairs
+      HoverLayer.tsx                 // raycasting + tooltip portal
+    ui/
+      Sidebar.tsx
+      FilterPanel.tsx
+      LatencyLegend.tsx
+      TooltipPortal.tsx
+      charts/                        // future: recharts/visx for historical
+  lib/
+    geo/
+      projection.ts                  // latLngToVector3, greatCircleArc
+      landmass.ts                    // geojson → line segments loader
+    data/
+      exchanges.ts                   // typed static list
+      regions.ts                     // typed static list (AWS/GCP/Azure)
+      latencySource.ts               // fetch + normalize from public source
+    store/
+      useWorldStore.ts               // zustand: selections, filters, UI
+      useLatencyStore.ts             // zustand: latest metrics (ref-driven)
+      useHistoryStore.ts             // future: time-series buffer
+    hooks/
+      useLatencyStream.ts            // 5–10s polling w/ visibility + backoff
+      useFrameThrottle.ts            // throttle R3F useFrame
+  workers/
+    latency.worker.ts                // parsing/normalizing off main thread
+  types/
+    domain.ts                        // Exchange, CloudRegion, LatencySample, Pair
+  styles/
+    globals.css
+
 ## Getting Started
 
 First, run the development server:
