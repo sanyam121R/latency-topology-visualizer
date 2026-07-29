@@ -1,83 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Latency Topology Visualizer
 
-Folder structure
+Latency Topology Visualizer is a globe-centered operations dashboard for exploring latency between cryptocurrency exchanges and cloud regions in a dense, command-center style interface built with Next.js and TypeScript.
 
+## Overview
 
+The application combines a central 3D globe with telemetry rails, a top status strip, and a bottom data dock so operators can inspect routes, filter visible links, and compare latency behavior from one integrated view.
+The current build emphasizes a production-style dashboard shell, shared filtering behavior, truthful counts, and performance-aware rendering patterns rather than a generic admin layout.
+
+## Features
+
+- Globe-first dashboard composition with a framed operations-board layout.
+- Shared visibility/filtering model across globe arcs, markers, counts, and table views.
+- Top telemetry strip with live status and route summary surfaces.
+- Left and right contextual rails for controls, route details, and summary panels.
+- Bottom dock with sortable route table and synchronized selection behavior.
+- TypeScript-based Next.js App Router structure suitable for scalable frontend organization.
+
+## Stack
+
+- Next.js App Router for the application shell and routing conventions.
+- TypeScript for stronger safety and maintainable frontend code organization.
+- React-based UI and scene integration for dashboard surfaces and interactions.
+- A modular project structure with app, components, hooks, lib, and types directories consistent with scalable Next.js frontend practices.
+
+## Project structure
+
+```text
 src/
-  app/
-    layout.tsx
-    page.tsx                         // mounts <Scene/>
-    api/
-      latency/route.ts               // server route: proxy/normalize latency source
-      exchanges/route.ts             // static JSON passthrough (cached)
-      regions/route.ts               // static JSON passthrough (cached)
-  components/
-    scene/
-      Scene.tsx                      // <Canvas> root, lights, controls
-      Globe.tsx                      // sphere + landmass wireframe
-      ExchangeMarkers.tsx            // instanced mesh of exchange points
-      CloudRegionMarkers.tsx         // instanced mesh of cloud regions
-      LatencyArcs.tsx                // animated arcs between pairs
-      HoverLayer.tsx                 // raycasting + tooltip portal
-    ui/
-      Sidebar.tsx
-      FilterPanel.tsx
-      LatencyLegend.tsx
-      TooltipPortal.tsx
-      charts/                        // future: recharts/visx for historical
-  lib/
-    geo/
-      projection.ts                  // latLngToVector3, greatCircleArc
-      landmass.ts                    // geojson → line segments loader
-    data/
-      exchanges.ts                   // typed static list
-      regions.ts                     // typed static list (AWS/GCP/Azure)
-      latencySource.ts               // fetch + normalize from public source
-    store/
-      useWorldStore.ts               // zustand: selections, filters, UI
-      useLatencyStore.ts             // zustand: latest metrics (ref-driven)
-      useHistoryStore.ts             // future: time-series buffer
-    hooks/
-      useLatencyStream.ts            // 5–10s polling w/ visibility + backoff
-      useFrameThrottle.ts            // throttle R3F useFrame
-  workers/
-    latency.worker.ts                // parsing/normalizing off main thread
-  types/
-    domain.ts                        // Exchange, CloudRegion, LatencySample, Pair
-  styles/
-    globals.css
+  app/                # App Router entry points and page mounting
+  components/         # Layout, scene, panel, table, and UI components
+  hooks/              # Custom hooks for snapshots, filters, and integration logic
+  lib/                # Shared domain logic, scene helpers, data shaping, and stores
+  styles/             # Global styling and design tokens
+  types/              # Shared TypeScript domain types
+  tests/              # Functional, render, DOM, and regression checks
+```
 
-## Getting Started
+This structure keeps routing, reusable components, shared logic, and domain types separated, which is a common recommendation for maintainable Next.js applications.
 
-First, run the development server:
+## Getting started
+
+### Prerequisites
+
+- Node.js 22+ or a newer LTS runtime.
+- npm, pnpm, or yarn.
+
+### Install
+
+```bash
+git clone <your-repository-url>
+cd <your-project-folder>
+npm install
+```
+
+A good README should provide copy-paste-ready setup instructions so new contributors can reproduce the local environment quickly.
+
+### Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open the local development URL printed by Next.js in the terminal.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Usage
 
-To learn more about Next.js, take a look at the following resources:
+Use the dashboard as a live exploration surface:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Rotate and inspect the globe-centered route topology.
+- Filter by provider, band, exchange, or layer visibility.
+- Select a route from the table or visualization to inspect synced contextual details.
+- Use the bottom dock to sort and compare visible routes.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+READMEs are most useful when they explain both what the project does and how someone should interact with it after setup.[6]
 
-## Deploy on Vercel
+## Development notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The intended architecture keeps hot-path visualization updates separate from slower DOM updates so the dashboard remains responsive as telemetry changes.
+The project should continue to prefer shared domain logic, centralized visibility rules, and narrowly scoped UI updates over duplicated panel-specific logic.[7]
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+```bash
+npm run dev        # Start local development server
+npm run build      # Create production build
+npm run start      # Run production server
+npm run test       # Run test suite (if configured in this repo)
+npm run check      # Run combined verification / checks (if configured)
+```
+
+Keep this section aligned with the actual package scripts in the repository so the README stays trustworthy and reproducible.
+
+## Quality checklist
+
+Before merging major changes, verify:
+
+- Filters stay consistent across globe, panels, counts, and table.
+- Selection and deselection work from every supported path.
+- Visible counts match actual rendered/visible data.
+- Layout still preserves the globe-first command-center composition.
+- No unnecessary scene re-renders or cleanup regressions are introduced.
+
+Clear, updated README guidance reduces onboarding friction and helps preserve project quality over time.[6]
+
+## Contributing
+
+When contributing, prefer small focused changes, keep naming domain-specific, avoid duplicating filtering logic, and update the README whenever setup, scripts, or architecture assumptions change.[6]
+
+## License
+
+Add the project license here, for example MIT, Apache-2.0, or the appropriate internal/proprietary notice for the repository.[6]
