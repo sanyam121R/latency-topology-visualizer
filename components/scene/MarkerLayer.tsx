@@ -1,12 +1,13 @@
 'use client';
 
-import { JSX, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import { JSX, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
 import { Color, InstancedMesh, Matrix4, Vector3 } from 'three';
 import type { CloudProvider, GeoPoint } from '@/types/domain';
 import { latLngToVector3 } from '@/lib/geo/projection';
-import { worldStore, type HoverTarget } from '@/lib/store/useWorldStore';
+import { getFilters, worldStore, type HoverTarget } from '@/lib/store/useWorldStore';
+import type { LinkFilters } from '@/lib/scene/visibility';
 
 /**
  * Generic instanced marker layer, shared by exchanges and cloud regions.
@@ -37,8 +38,8 @@ export interface MarkerLayerProps<T extends MarkerDatum> {
   toHoverTarget: (item: T, index: number) => HoverTarget;
   /** Returns true when this item is the currently hovered/selected one. */
   isEmphasised: (item: T, hovered: HoverTarget | null, selected: HoverTarget | null) => boolean;
-  /** Per-item visibility, evaluated every frame from the filter store. */
-  isVisible?: (item: T, visibleProviders: Record<CloudProvider, boolean>) => boolean;
+  /** Per-item visibility, evaluated every frame against the shared filters. */
+  isVisible?: (item: T, filters: LinkFilters) => boolean;
   opacity?: number;
 }
 
@@ -94,12 +95,13 @@ export function MarkerLayer<T extends MarkerDatum>({
   useFrame(({ clock }) => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    const { hovered, selected, visibleProviders } = worldStore.getState();
+    const { hovered, selected } = worldStore.getState();
+    const filters = getFilters();
     const pulse = 1 + Math.sin(clock.elapsedTime * 4) * 0.12;
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i]!;
-      const visible = isVisible ? isVisible(item, visibleProviders) : true;
+      const visible = isVisible ? isVisible(item, filters) : true;
       const emphasised = visible && isEmphasised(item, hovered, selected);
       // Scale 0 is how we hide a filtered-out instance: no geometry swap, no
       // re-render, and it keeps instanceId stable for hover resolution.
@@ -138,6 +140,18 @@ export function MarkerLayer<T extends MarkerDatum>({
     },
     [items, toHoverTarget],
   );
+
+  // Dispose on unmount. Harmless today (markers mount once) but required the
+  // moment the dashboard can swap strategies or tear the stage down.
+  useEffect(() => {
+    const mesh = meshRef.current;
+    return () => {
+      mesh?.geometry.dispose();
+      const material = mesh?.material;
+      if (Array.isArray(material)) material.forEach((m) => m.dispose());
+      else material?.dispose();
+    };
+  }, []);
 
   return (
     <instancedMesh

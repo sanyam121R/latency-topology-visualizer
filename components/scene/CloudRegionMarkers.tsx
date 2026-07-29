@@ -5,6 +5,7 @@ import { CLOUD_REGIONS } from '@/lib/data/regions';
 import type { CloudProvider, CloudRegion } from '@/types/domain';
 import { MarkerLayer } from './MarkerLayer';
 import type { HoverTarget } from '@/lib/store/useWorldStore';
+import { isRegionVisible, type LinkFilters } from '@/lib/scene/visibility';
 
 /**
  * Cloud regions are secondary context: dimmer and smaller than exchanges, and
@@ -32,8 +33,7 @@ function ProviderLayer({ provider }: { provider: CloudProvider }): JSX.Element {
     [],
   );
   const isVisible = useCallback(
-    (item: CloudRegion, visibleProviders: Record<CloudProvider, boolean>) =>
-      visibleProviders[item.provider] !== false,
+    (item: CloudRegion, filters: LinkFilters) => isRegionVisible(item.provider, filters),
     [],
   );
 

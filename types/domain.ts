@@ -77,3 +77,22 @@ export interface LatencySource {
   /** Fetch one batch. Should throw on failure; caller handles backoff. */
   fetchBatch(signal?: AbortSignal): Promise<LatencySample[]>;
 }
+
+/**
+ * What two endpoints a link connects.
+ *
+ * MINIMAL FORWARD-COMPATIBILITY CHANGE: only 'exchange-region' is produced
+ * today. The field exists so table modes, filters and future P2P ingestion key
+ * off data rather than off which component is rendering. Generalising the
+ * endpoint *types* (NodeId union, id namespacing, directionality) is the larger
+ * refactor flagged in review and is deliberately NOT done here.
+ */
+export type LinkKind = 'exchange-region' | 'exchange-exchange';
+
+/** Which dataset the bottom dock is showing. */
+export type TableMode = 'exchange-region' | 'exchange-exchange' | 'history';
+
+/** Column ids the route table can sort on. */
+export type RouteSortKey = 'route' | 'provider' | 'rtt' | 'band' | 'distance' | 'jitter';
+
+export type SortDirection = 'asc' | 'desc';

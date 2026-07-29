@@ -2,6 +2,7 @@ import type { LatencyBand, PairKey } from '@/types/domain';
 import type { VisualPair } from '@/lib/data/pairs';
 import { arcAltitudeFor, buildGreatCircleArc } from '@/lib/geo/projection';
 import { BANDS, latencyBand, writeColorForRtt } from '@/lib/data/latencyScale';
+import { isLinkVisible, type LinkFilters } from './visibility';
 
 /**
  * ArcBatch — the bridge between latency values and GPU buffers.
@@ -49,6 +50,8 @@ export interface SyncResult {
   membershipChanged: boolean;
   /** Pairs that currently have no sample yet. */
   missing: number;
+  /** Pairs actually drawn after filtering — the truthful "visible" count. */
+  visible: number;
 }
 
 export class ArcBatch {
@@ -141,6 +144,7 @@ this.pickSegmentToPair = new Int32Array(maxSegments);
     return v === undefined || Number.isNaN(v) ? undefined : v;
   }
 
+  /** Band the pair is DRAWN in. Undefined when missing or filtered out. */
   getBand(pairIndex: number): LatencyBand | undefined {
     const b = this.bandOfPair[pairIndex];
     return b === undefined || b < 0 ? undefined : BANDS[b];
@@ -173,26 +177,39 @@ resolvePickHit(faceIndex: number): number | undefined {
    * Recompute colors (always) and band membership (when thresholds are crossed).
    * Call once per frame. Allocation-free.
    */
-  sync(read: RttReader): SyncResult {
+  sync(read: RttReader, filters?: LinkFilters): SyncResult {
     const { pairs, points: pts, segments } = this;
     const pointsPerArc = segments + 1;
 
     // Pass 1: read values, detect band changes.
     let membershipChanged = false;
     let missing = 0;
+    let visible = 0;
     for (let i = 0; i < pairs.length; i++) {
-      const rtt = read(pairs[i]!.key);
+      const pair = pairs[i]!;
+      const rtt = read(pair.key);
+
       if (rtt === undefined) {
         missing++;
+        this.rttOfPair[i] = NaN;
         if (this.bandOfPair[i] !== -1) {
           this.bandOfPair[i] = -1;
           membershipChanged = true;
         }
-        this.rttOfPair[i] = NaN;
         continue;
       }
+
+      // Keep the value even when filtered out: panels and the table still want
+      // the RTT, they just don't want the arc drawn.
       this.rttOfPair[i] = rtt;
-      const bandIndex = BANDS.indexOf(latencyBand(rtt));
+      const band = latencyBand(rtt);
+
+      // Band -1 means "not drawn". Filtering reuses that channel, so a hidden
+      // arc costs nothing in the packing pass and can't be hover-picked.
+      const shown = filters ? isLinkVisible(pair, band, filters) : true;
+      const bandIndex = shown ? BANDS.indexOf(band) : -1;
+      if (shown) visible++;
+
       if (this.bandOfPair[i] !== bandIndex) {
         this.bandOfPair[i] = bandIndex;
         membershipChanged = true;
@@ -241,6 +258,6 @@ resolvePickHit(faceIndex: number): number | undefined {
       }
     }
 
-    return { membershipChanged, missing };
+    return { membershipChanged, missing, visible };
   }
 }

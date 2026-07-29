@@ -5,6 +5,7 @@ import { EXCHANGES } from '@/lib/data/exchanges';
 import type { Exchange } from '@/types/domain';
 import { MarkerLayer } from './MarkerLayer';
 import type { HoverTarget } from '@/lib/store/useWorldStore';
+import { isExchangeVisible, type LinkFilters } from '@/lib/scene/visibility';
 
 /** Exchanges are the primary entity: bright white, slightly larger. */
 export function ExchangeMarkers(): JSX.Element {
@@ -19,9 +20,15 @@ export function ExchangeMarkers(): JSX.Element {
     [],
   );
 
+  const isVisible = useCallback(
+    (item: Exchange, filters: LinkFilters) => isExchangeVisible(item.id, filters),
+    [],
+  );
+
   return (
     <MarkerLayer
       items={EXCHANGES}
+      isVisible={isVisible}
       radius={0.012}
       altitude={0.006}
       color="#ffffff"

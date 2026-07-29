@@ -12,7 +12,7 @@ import { BANDS, BAND_OPACITY, BAND_WIDTHS } from '@/lib/data/latencyScale';
 import { buildVisualPairs, type PairStrategy } from '@/lib/data/pairs';
 import { ArcBatch } from '@/lib/scene/arcBatch';
 import { interpolatedRtt, latencyStore } from '@/lib/store/useLatencyStore';
-import { worldStore } from '@/lib/store/useWorldStore';
+import { getFilters, worldStore } from '@/lib/store/useWorldStore';
 
 /**
  * LATENCY ARCS — the only component that updates every frame.
@@ -130,7 +130,17 @@ export function LatencyArcs({
   }, []);
 
   useFrame(() => {
-    const { membershipChanged } = batch.sync(readRtt);
+    // Filters are read by reference every frame — never via a subscription, so
+    // toggling a provider updates the globe without re-rendering this tree.
+    const { membershipChanged, visible } = batch.sync(readRtt, getFilters());
+
+    // Counts are published only when they change, so the topbar and rails
+    // re-render at human speed rather than 60Hz.
+    worldStore.getState().publishStats({
+      ingested: latencyStore.getState().pairs.size,
+      drawable: pairs.length,
+      visible,
+    });
 
     for (const { band, geometry } of bands) {
       const buffers = batch.getBuffers(band);

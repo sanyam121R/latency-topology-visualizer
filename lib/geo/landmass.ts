@@ -1,5 +1,5 @@
 import type { GeoPoint } from '@/types/domain';
-import { GLOBE_RADIUS, centralAngle, greatCirclePoint, latLngToVector3 } from './projection';
+import { centralAngle, greatCirclePoint, latLngToVector3 } from './projection';
 import { Vector3 } from 'three';
 
 /**
